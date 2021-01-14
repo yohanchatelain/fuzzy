@@ -9,7 +9,7 @@ RUN apt-get update -qqq &&\
     mkdir -p /opt/build/
 
 # Copy verificarlo's exclusion file for Python 3
-COPY docker/resources/python-vfc-exclude.txt /tmp/python-vfc-exclude.txt
+COPY fuzzy/docker/resources/python-vfc-exclude.txt /tmp/python-vfc-exclude.txt
 
 # cmake CMAKE_C_COMPILER=verificarlo-c CMAKE_Fortran_COMPILER=verificarlo-f BUILD_SHARED_LIBS=ON .
 
