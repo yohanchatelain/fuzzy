@@ -10,7 +10,7 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-20.08
+    runs-on: ubuntu-20-08
 
     steps:
     - uses: actions/checkout@v2
