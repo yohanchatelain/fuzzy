@@ -18,6 +18,9 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       -
+        name: Check Out Repo 
+        uses: actions/checkout@v2
+      -
         name: Build python and push
         id: docker_build
         uses: docker/build-push-action@v2
