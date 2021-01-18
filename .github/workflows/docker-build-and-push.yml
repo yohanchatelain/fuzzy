@@ -17,16 +17,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      -
-        name: Check Out Repo 
-        uses: actions/checkout@v2
 
   lapack:
     needs: setup
     runs-on: ubuntu-20.04
     steps:
       -
-        name: Build lapack and push
+        name: Check Out Repo 
+        uses: actions/checkout@v2
+      -
+        name: Build fuzzy lapack docker and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
@@ -42,15 +42,18 @@ jobs:
     needs: lapack
     runs-on: ubuntu-20.04
     steps:
-    -
-      name: Build lapack and push
-      id: docker_build
-      uses: docker/build-push-action@v2
-      with:
-        context: ./
-        file: ./fuzzy/docker/level1/Dockerfile.ubuntu20.04-python
-        push: true
-        tags: yohanchatelain/fuzzy:python-v0.4.1
-    -
-      name: Image digest
-      run: echo ${{ steps.docker_build.outputs.digest }}
+      -
+        name: Check Out Repo 
+        uses: actions/checkout@v2
+      -
+        name: Build fuzzy Python docker and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./fuzzy/docker/level1/Dockerfile.ubuntu20.04-python
+          push: true
+          tags: yohanchatelain/fuzzy:python-v0.4.1
+      -
+        name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
