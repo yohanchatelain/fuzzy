@@ -11,7 +11,7 @@ RUN  git config --global user.email "fake@mail.com" &&\
     git config --global user.name "Anonymous Patcher" 
 
 # Remove fuzzless numpy version
-RUN apt remove python3-numpy
+RUN apt remove -y -qqq python3-numpy
 
 # Build numpy from sources and link with the local BLAS and LAPACK
 RUN pip3.8 install cython

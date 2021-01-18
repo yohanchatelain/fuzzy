@@ -4,7 +4,7 @@ FROM yohanchatelain/fuzzy:lapack-v0.4.1
 RUN echo "libinterflop_ieee.so" > $VFC_BACKENDS_FROM_FILE
 
 # Remove existing python package
-RUN apt remove python3
+RUN apt -y -qqq remove python3
 
 ## Build Python 3.8.5 from source and the associated pip
 RUN cd /opt/build/ && \

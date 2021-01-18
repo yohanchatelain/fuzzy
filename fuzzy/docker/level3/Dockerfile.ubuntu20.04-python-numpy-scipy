@@ -4,7 +4,7 @@ FROM yohanchatelain/fuzzy:python-numpy-v0.4.1
 RUN echo "libinterflop_ieee.so" > $VFC_BACKENDS_FROM_FILE
 
 # Remove any scipy package install previously
-RUN apt remove python3-scipy
+RUN apt remove -y -qqq python3-scipy
 
 RUN pip3 install joblib
 RUN cp /usr/local/bin/verificarlo-f /usr/bin/gfortran

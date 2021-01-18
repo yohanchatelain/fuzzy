@@ -3,7 +3,6 @@ FROM yohanchatelain/fuzzy:python-numpy-scipy-v0.4.1
 # Load backend IEEE
 RUN echo "libinterflop_ieee.so" > $VFC_BACKENDS_FROM_FILE
 
-
 RUN cd /opt/build &&\
   git clone https://github.com/scikit-learn/scikit-learn.git &&\
   cd scikit-learn &&\
