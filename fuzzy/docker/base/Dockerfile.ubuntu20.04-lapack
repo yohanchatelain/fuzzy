@@ -5,7 +5,7 @@ RUN apt-get update -qqq &&\
     make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev wget \
     curl llvm libncurses5-dev  libncursesw5-dev \
-    xz-utils tk-dev wget fort77 gfortran cmake &&\
+    xz-utils tk-dev wget fort77 gfortran cmake lzma-dev &&\
     rm -rf /var/lib/apt/lists/ &&\
     mkdir -p /opt/build/
 
@@ -21,7 +21,7 @@ RUN patch /usr/local/include/vfcwrapper.c /tmp/vfcwrapper.patch
 
 # Setting compilers and linkers to use verificarlo
 ENV CC "verificarlo-c"
-ENV CXX "verificarlo-cpp"
+ENV CXX "verificarlo-c++"
 ENV FC "verificarlo-f"
 
 # Load backend IEEE

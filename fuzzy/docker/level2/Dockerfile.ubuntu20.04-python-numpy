@@ -10,6 +10,9 @@ COPY fuzzy/docker/resources/numpy-vfc-exclude.txt /tmp/numpy-vfc-exclude.txt
 RUN  git config --global user.email "fake@mail.com" &&\
     git config --global user.name "Anonymous Patcher" 
 
+# Remove fuzzless numpy version
+RUN apt remove python3-numpy
+
 # Build numpy from sources and link with the local BLAS and LAPACK
 RUN pip3.8 install cython
 RUN cd /opt/build &&\
