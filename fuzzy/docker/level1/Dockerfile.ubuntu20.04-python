@@ -14,6 +14,9 @@ RUN cd /opt/build/ && \
     wget https://bootstrap.pypa.io/get-pip.py &&\
     python3 get-pip.py
 
+# Remove temporary files
+RUN rm -rf /opt/build/*
+
 # Restore default MCA mode
 RUN echo "libinterflop_mca.so -m rr" > $VFC_BACKENDS_FROM_FILE
 
