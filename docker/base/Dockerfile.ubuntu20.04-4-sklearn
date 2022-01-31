@@ -8,7 +8,9 @@ RUN cd /opt/build &&\
   git clone https://github.com/scikit-learn/scikit-learn.git &&\
   cd scikit-learn &&\
   git checkout 1.0.2 &&\
-  CC="verificarlo-c" FC="verificarlo-f" CXX="verificarlo-c++" CFGLAGS="--conservative -Wunused-command-line-argument"\
+  CC="verificarlo-c" FC="verificarlo-f" CXX="verificarlo-c++" \
+  CFLAGS="--conservative -Wunused-command-line-argument" \
+  LDFLAGS="--conservative -Wunused-command-line-argument" \
   python3 setup.py build -j 4 install
 
 # Remove temporary files
