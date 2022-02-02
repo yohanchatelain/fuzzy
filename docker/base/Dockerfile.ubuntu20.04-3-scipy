@@ -11,8 +11,6 @@ COPY docker/resources/numpy-sanity-check.py /tmp/scipy-sanity-check.py
 RUN pip3 install joblib pythran pybind11
 # Replace gfortran with verificarlo-f
 RUN cp /usr/local/bin/verificarlo-f /usr/bin/gfortran
-# Replace gcc with verificarlo-c
-#RUN ln -sf $(which verificarlo-c) $(which x86_64-linux-gnu-gcc)
 
 # Remove debug flag which makes flag crash
 RUN sed -i "294s/.*/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options/" $(which verificarlo)

@@ -11,7 +11,7 @@ RUN cd /opt/build &&\
   CC="verificarlo-c" FC="verificarlo-f" CXX="verificarlo-c++" \
   CFLAGS="--conservative -Wunused-command-line-argument" \
   LDFLAGS="--conservative -Wunused-command-line-argument" \
-  python3 setup.py build -j 4 install
+  python3 -m pip install --verbose  . 
 
 # Remove temporary files
 RUN rm -rf /opt/build/*
