@@ -5,7 +5,7 @@ FROM verificarlo/fuzzy:${VERIFICARLO_VERSION}-lapack-python3.8.5-numpy-scipy
 RUN echo "libinterflop_ieee.so" > $VFC_BACKENDS_FROM_FILE
 
 RUN cd /opt/build &&\
-  https://github.com/scikit-learn/scikit-learn/archive/refs/tags/1.0.2.tar.gz &&\
+  wget https://github.com/scikit-learn/scikit-learn/archive/refs/tags/1.0.2.tar.gz &&\
   tar xvf  1.0.2.tar.gz &&\
   cd scikit-learn-1.0.2 &&\
   CC="verificarlo-c" FC="verificarlo-f" CXX="verificarlo-c++" \
