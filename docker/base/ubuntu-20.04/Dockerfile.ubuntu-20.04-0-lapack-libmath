@@ -16,6 +16,8 @@ RUN apt-get update -qqq &&\
 # Copy verificarlo's exclusion file for Python 3
 COPY docker/resources/python-vfc-exclude.txt /tmp/python-vfc-exclude.txt
 COPY docker/resources/libmath/set-fuzzy-libmath.py /usr/local/bin/set-fuzzy-libmath
+COPY docker/resources/blas-sanity-check.sh /tmp/blas-sanity-check.sh
+COPY docker/resources/test_blas.c /tmp/test_blas.c
 
 # Setting compilers and linkers to use verificarlo
 ENV CC "verificarlo-c"
@@ -52,11 +54,14 @@ RUN cd /opt/build/ && \
     mkdir build && \
     cd /opt/build/lapack-3.9.0/build && \
     cmake FC=verificarlo-f -DCMAKE_BUILD_TYPE=RELEASE \
+    -DCMAKE_CFLAGS="--online-instrumentation=up-down --inst-fma" -DCMAKE_Fortran_FLAGS="--online-instrumentation=up-down --inst-fma" \
     -DCMAKE_C_COMPILER=verificarlo-c -DCMAKE_Fortran_COMPILER=verificarlo-f \
     -DCBLAS=ON -DBUILD_SHARED_LIBS=ON .. && \
     make -j $(nproc) && \
     make install && \
     rm -rf /opt/build/*
+
+RUN cd /tmp/ && ./blas-sanity-check.sh
 
 # Preload the instrumented shared library
 ENV VFC_BACKENDS_LOGGER="False"
