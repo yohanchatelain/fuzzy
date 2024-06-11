@@ -39,7 +39,7 @@ RUN mkdir -p /opt/ && \
     make && \
     make test
 
-RUN  sed -i "443s/.*/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options/" $(which verificarlo)
+RUN  sed -i "s/{opt}/{opt} -strip-debug/g" $(which verificarlo)
 
 # Build BLAS and LAPACK from the following URL's instructions:
 #  http://ab-initio.mit.edu/wiki/index.php/Template:Installing_BLAS_and_LAPACK
@@ -59,14 +59,13 @@ RUN cd /opt/build/ && \
     -DCMAKE_CFLAGS="--online-instrumentation=sr --inst-fma" -DCMAKE_Fortran_FLAGS="--online-instrumentation=sr --inst-fma" \
     -DCMAKE_C_COMPILER=verificarlo-c -DCMAKE_Fortran_COMPILER=verificarlo-f \
     -DCBLAS=ON -DBUILD_SHARED_LIBS=ON .. && \
-    make -j $(nproc) && \
+    make -j 1 && \
     make install && \
     rm -rf /opt/build/*
 
 RUN cd /tmp/ && ./blas-sanity-check.sh
 
-RUN   sed -i "443s/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options//" $(which verificarlo) 
-
+RUN  sed -i "s/{opt} -strip-debug/{opt}/g" $(which verificarlo)
 
 # Preload the instrumented shared library
 ENV VFC_BACKENDS_LOGGER="False"
