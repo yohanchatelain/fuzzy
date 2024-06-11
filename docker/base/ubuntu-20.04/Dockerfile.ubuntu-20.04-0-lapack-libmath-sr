@@ -39,7 +39,7 @@ RUN mkdir -p /opt/ && \
     make && \
     make test
 
-RUN  sed -i "441s/.*/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options/" $(which verificarlo)
+RUN  sed -i "443s/.*/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options/" $(which verificarlo)
 
 # Build BLAS and LAPACK from the following URL's instructions:
 #  http://ab-initio.mit.edu/wiki/index.php/Template:Installing_BLAS_and_LAPACK
@@ -65,7 +65,7 @@ RUN cd /opt/build/ && \
 
 RUN cd /tmp/ && ./blas-sanity-check.sh
 
-RUN   sed -i "441s/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options//" $(which verificarlo) 
+RUN   sed -i "443s/    llvm_options = llvm_options.replace(\"'-g'\",'') if \"'-g'\" in llvm_options else llvm_options//" $(which verificarlo) 
 
 
 # Preload the instrumented shared library
