@@ -9,13 +9,14 @@ generate_docker() {
 # Base image
 FROM ${1}
 
-RUN mkdir -p /opt/mca-libmath/{fast,standard,quad,mpfr} 
+RUN mkdir -p /opt/mca-libmath/{fast,standard,quad,mpfr,lib} 
 COPY --from=${2} /opt/mca-libmath/set-fuzzy-libmath.py /usr/local/bin/set-fuzzy-libmath
 COPY --from=${2} /opt/mca-libmath/fast/libmath.so /opt/mca-libmath/fast/libmath.so
 COPY --from=${2} /opt/mca-libmath/standard/libmath.so /opt/mca-libmath/standard/libmath.so
 COPY --from=${2} /opt/mca-libmath/quad/libmath.so /opt/mca-libmath/quad/libmath.so
 COPY --from=${2} /opt/mca-libmath/mpfr/libmath.so /opt/mca-libmath/mpfr/libmath.so
-COPY --from=${2} /usr/local/lib/libinterflop* /usr/local/lib/
+COPY --from=${2} /usr/local/lib/libinterflop* /opt/mca-libmath/lib/
+ENV LD_LIBRARY_PATH="/opt/mca-libmath/lib:${LD_LIBRARY_PATH}"
 
 # If you will also want to recompile more libraries with verificarlo, add these lines
 COPY --from=${2} /usr/local/bin/verificarlo* /usr/local/bin/
@@ -25,6 +26,8 @@ COPY --from=${2} /usr/local/include/* /usr/local/include/
 RUN set-fuzzy-libmath --version=standard
 
 ENV VFC_BACKENDS 'libinterflop_mca.so --precision-binary32=24 --precision-binary64=53 --mode=rr'
+ENV VFC_BACKENDS_LOGGER False
+ENV VFC_BACKENDS_SILENT_LOAD True
 HERE
 
 }

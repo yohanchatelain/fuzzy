@@ -1,0 +1,22 @@
+# Base image
+FROM nipreps/mriqc:24.0.0
+
+RUN mkdir -p /opt/mca-libmath/{fast,standard,quad,mpfr,lib} 
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /opt/mca-libmath/set-fuzzy-libmath.py /usr/local/bin/set-fuzzy-libmath
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /opt/mca-libmath/fast/libmath.so /opt/mca-libmath/fast/libmath.so
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /opt/mca-libmath/standard/libmath.so /opt/mca-libmath/standard/libmath.so
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /opt/mca-libmath/quad/libmath.so /opt/mca-libmath/quad/libmath.so
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /opt/mca-libmath/mpfr/libmath.so /opt/mca-libmath/mpfr/libmath.so
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /usr/local/lib/libinterflop* /opt/mca-libmath/lib/
+ENV LD_LIBRARY_PATH="/opt/mca-libmath/lib:/home/ychatel/.local/lib:/home/ychatel/.local/lib64:/mnt/lustre/ychatel/.local/lib:"
+
+# If you will also want to recompile more libraries with verificarlo, add these lines
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /usr/local/bin/verificarlo* /usr/local/bin/
+COPY --from=yohanchatelain/fuzzy:v2.0.0-lapack /usr/local/include/* /usr/local/include/
+
+# Preloading the instrumented shared library
+RUN set-fuzzy-libmath --version=standard
+
+ENV VFC_BACKENDS 'libinterflop_mca.so --precision-binary32=24 --precision-binary64=53 --mode=rr'
+ENV VFC_BACKENDS_LOGGER False
+ENV VFC_BACKENDS_SILENT_LOAD True
