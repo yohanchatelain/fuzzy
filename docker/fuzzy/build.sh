@@ -12,8 +12,10 @@
 #
 # The build runs code it has just compiled, so it must run on a CPU that
 # supports the level: an AVX-512 machine for v4. VERIFICARLO_SRC reuses an
-# existing Verificarlo checkout (with submodules) instead of cloning one;
-# VERIFICARLO_VERSION and PRISM_VERSION must then match it.
+# existing Verificarlo checkout (with submodules) instead of cloning one, and
+# VERIFICARLO_REF builds an unreleased commit or ref (e.g. pull/395/head)
+# instead of the release tag. VERIFICARLO_VERSION and PRISM_VERSION must then
+# match it.
 # JOBS sets how many stages podman builds in parallel (default 2).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -46,7 +48,14 @@ if [ -n "${REBUILD_BASE:-}" ] || ! "$engine" image inspect "$base" >/dev/null 2>
     src=${VERIFICARLO_SRC:-}
     if [ -z "$src" ]; then
         src=$(mktemp -d)/verificarlo
-        git clone --branch "$verificarlo_version" --recurse-submodules https://github.com/verificarlo/verificarlo.git "$src"
+        if [ -n "${VERIFICARLO_REF:-}" ]; then
+            git init -q "$src"
+            git -C "$src" fetch -q --depth 1 https://github.com/verificarlo/verificarlo.git "$VERIFICARLO_REF"
+            git -C "$src" checkout -q FETCH_HEAD
+            git -C "$src" submodule update -q --init --recursive
+        else
+            git clone --branch "$verificarlo_version" --recurse-submodules https://github.com/verificarlo/verificarlo.git "$src"
+        fi
     fi
     "$engine" build "${extra[@]}" --build-arg PRISM_ARCH="$march" \
         -t "$base" -f "$root/docker/pytorch/Dockerfile.verificarlo" "$src"
