@@ -1,6 +1,6 @@
 # Fuzzy, one image per x86-64 level
 
-`verificarlo/fuzzy:v2.6.0-x86-64-v<N>` contains every package twice: built
+`verificarlo/fuzzy:v2.6.1-x86-64-v<N>` contains every package twice: built
 with Verificarlo's PRISM backend (`prism`, stochastic rounding) and built
 without instrumentation (`ieee`), with the same compiler, flags and `-march`.
 You choose a build per package at run time, without rebuilding anything.
@@ -9,18 +9,28 @@ sonames and Python ABI, and any mix of them works: instrumented NumPy with a
 plain LAPACK instruments only NumPy.
 
 This is a prototype ([#53](https://github.com/verificarlo/fuzzy/issues/53)):
-only the `x86-64-v3` (`avx2`) image, with LAPACK, CPython and NumPy.
+only the `x86-64-v3` (`avx2`) image, with LAPACK, CPython, NumPy and the C
+library's math functions.
 
 | Package  | Version | Kind        |
 | -------- | ------- | ----------- |
 | `lapack` | 3.12.1  | native      |
 | `python` | 3.12.13 | interpreter |
 | `numpy`  | 2.4.6   | python      |
+| `libm`   | quad    | native      |
 
 By default every package uses its `prism` build and
-`VFC_BACKENDS="libinterflop_prism.so --mode=sr"`. The C library's math
-functions (`libm`) are not instrumented: PRISM cannot perturb them yet
-([verificarlo/prism#21](https://github.com/verificarlo/prism/issues/21)).
+`VFC_BACKENDS="libinterflop_prism.so --mode=sr"`.
+
+`libm=prism` replaces the C library's `sin`, `exp`, `log`, `pow`, `atan2`,
+`erf`, `lgamma`... (in `float` and `double`; the list is in
+`recipes/libm/fuzzy-libm.c`) for every program in the image, instrumented or
+not. Each result is computed in binary128 with libquadmath, then rounded by
+PRISM with its current mode and precision: correctly rounded under
+`--mode=rn`, stochastically rounded under `--mode=sr`. The image preloads
+`libfuzzy-libm.so` (`LD_PRELOAD`), which the loader finds through
+`LD_LIBRARY_PATH`; `libm=ieee` selects an empty one, and the functions come
+from glibc. Other functions (`tan`, `sinh`, `exp2`...) always come from glibc.
 
 ## Choosing builds
 
@@ -31,7 +41,7 @@ fuzzy run lapack=ieee -- python3 script.py  # one command, nothing changed
 eval "$(fuzzy env python=ieee)"             # the same, for the current shell
 ```
 
-- **`lapack`, `python`**: `fuzzy use` moves the symlinks in
+- **`lapack`, `python`, `libm`**: `fuzzy use` moves the symlinks in
   `/opt/fuzzy/active`, which is on `LD_LIBRARY_PATH`. `fuzzy run` and
   `fuzzy env` put the other build first on `LD_LIBRARY_PATH` (and
   `PYTHONPATH` for CPython's extension modules) instead. They work on
@@ -73,7 +83,7 @@ print(s)"
 ## Your own recipe
 
 ```dockerfile
-FROM verificarlo/fuzzy:v2.6.0-x86-64-v3
+FROM verificarlo/fuzzy:v2.6.1-x86-64-v3
 RUN fuzzy use numpy=prism lapack=ieee && uv pip install pandas
 ```
 
@@ -118,12 +128,20 @@ On a machine whose CPU supports the level, from the repository root:
 docker/fuzzy/build.sh v3 podman     # or docker
 ```
 
+To build against an unreleased Verificarlo, pass a checkout (with submodules)
+and the versions it contains:
+
+```bash
+VERIFICARLO_SRC=~/verificarlo VERIFICARLO_VERSION=dev PRISM_VERSION=0.0.11 docker/fuzzy/build.sh v3
+```
+
 The script builds the level's Verificarlo image (`docker/pytorch/Dockerfile.verificarlo`) unless it
 exists already, then `docker/fuzzy/Dockerfile`. Each package has one
 recipe, `recipes/<pkg>/build.sh <ieee|prism>`; `recipes/common.sh` holds the
 flags of the two builds. The `test` stage runs `tests/run.sh`, which checks
 that each `prism` build varies under `--mode=sr` and that each `ieee` build
-does not. It also checks that `prism --mode=rn` stays within a few ULPs of
+does not, and that the PRISM libraries load on their own (they need `libhwy`
+and the shared `libprism-config`). It also checks that `prism --mode=rn` stays within a few ULPs of
 `ieee` and that mixed selections perturb only what they should. Finally, it
 checks that no binary uses vector registers wider than the level, that no
 RUNPATH points into a build directory, and that the `fuzzy` tool works.

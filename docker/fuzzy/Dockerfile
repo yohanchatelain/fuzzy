@@ -12,7 +12,7 @@
 # Requires BuildKit (docker) or buildah (podman) for COPY --from of stages.
 
 # The level's Verificarlo image: PRISM's static kernels compiled for MARCH.
-ARG BASE=localhost/verificarlo/verificarlo:v2.6.0-avx2
+ARG BASE=localhost/verificarlo/verificarlo:v2.6.1-avx2
 ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.12.21
 
 FROM ${UV_IMAGE} AS uv
@@ -59,6 +59,15 @@ RUN /opt/fuzzy-src/recipes/python/build.sh ieee
 FROM python AS python-prism
 RUN /opt/fuzzy-src/recipes/python/build.sh prism
 
+FROM base AS libm
+COPY docker/fuzzy/recipes/libm/ /opt/fuzzy-src/recipes/libm/
+
+FROM libm AS libm-ieee
+RUN /opt/fuzzy-src/recipes/libm/build.sh ieee
+
+FROM libm AS libm-prism
+RUN /opt/fuzzy-src/recipes/libm/build.sh prism
+
 # The ieee CPython and LAPACK, selected, to build the wheels of both builds.
 FROM base AS build-env
 COPY docker/fuzzy/bin/fuzzy /usr/local/bin/fuzzy
@@ -75,12 +84,12 @@ FROM numpy AS numpy-ieee
 RUN /opt/fuzzy-src/recipes/numpy/build.sh ieee
 
 FROM numpy AS numpy-prism
-ARG PRISM_RUNTIME_VERSION=0.0.8+x86.64.v3
+ARG PRISM_RUNTIME_VERSION=0.0.11+x86.64.v3
 RUN PRISM_RUNTIME="fuzzy-prism-runtime==${PRISM_RUNTIME_VERSION}" \
     /opt/fuzzy-src/recipes/numpy/build.sh prism
 
 FROM base AS prism-runtime
-ARG PRISM_RUNTIME_VERSION=0.0.8+x86.64.v3
+ARG PRISM_RUNTIME_VERSION=0.0.11+x86.64.v3
 COPY docker/fuzzy/recipes/wheeltool.py /opt/fuzzy-src/recipes/
 RUN python3 /opt/fuzzy-src/recipes/wheeltool.py marker \
     fuzzy-prism-runtime "${PRISM_RUNTIME_VERSION}" /opt/fuzzy/wheels/prism
@@ -88,36 +97,35 @@ RUN python3 /opt/fuzzy-src/recipes/wheeltool.py marker \
 FROM ${BASE} AS final
 ARG MARCH=x86-64-v3
 ARG LEVEL=x86-64-v3
-ARG VERIFICARLO_VERSION=v2.6.0
+ARG VERIFICARLO_VERSION=v2.6.1
 LABEL org.verificarlo.fuzzy.level=${LEVEL} \
       org.verificarlo.fuzzy.march=${MARCH} \
       org.verificarlo.version=${VERIFICARLO_VERSION}
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends -qq \
     libssl3t64 zlib1g libbz2-1.0 liblzma5 libreadline8t64 libsqlite3-0 \
-    libncursesw6 libffi8 libgdbm6t64 libuuid1 patchelf && \
+    libncursesw6 libffi8 libgdbm6t64 libuuid1 && \
     rm -rf /var/lib/apt/lists/*
-# PRISM's run-time options (--mode, --precision-*, --seed) reach the
-# static kernels only when libprism-static.so is in the global symbol scope.
-# A program not built by verificarlo-c, such as the ieee CPython, would
-# otherwise load it with dlopen, privately, when it imports the first prism
-# module, and the kernels would keep their defaults. Preload it, for every
-# process; the file is part of the image, so this holds under Apptainer too.
-COPY docker/fuzzy/recipes/add-hwy-needed.sh /opt/fuzzy-src/
-RUN /opt/fuzzy-src/add-hwy-needed.sh && \
-    echo /usr/local/lib/libprism-static.so >> /etc/ld.so.preload
 COPY --from=uv /uv /uvx /usr/local/bin/
 COPY docker/fuzzy/bin/fuzzy /usr/local/bin/fuzzy
 COPY --from=lapack-ieee /opt/fuzzy/ /opt/fuzzy/
 COPY --from=lapack-prism /opt/fuzzy/ /opt/fuzzy/
 COPY --from=python-ieee /opt/fuzzy/ /opt/fuzzy/
 COPY --from=python-prism /opt/fuzzy/ /opt/fuzzy/
+COPY --from=libm-ieee /opt/fuzzy/ /opt/fuzzy/
+COPY --from=libm-prism /opt/fuzzy/ /opt/fuzzy/
+# libfuzzy-libm.so is preloaded by name, from the selected libm build in
+# /opt/fuzzy/active/lib. The empty ieee library is also installed system-wide,
+# so that the preload never fails when LD_LIBRARY_PATH does not include it.
+COPY --from=libm-ieee /opt/fuzzy/lib/libm/quad/ieee/lib/libfuzzy-libm.so /usr/local/lib/
+RUN ldconfig
 COPY --from=numpy-ieee /opt/fuzzy/wheels/ /opt/fuzzy/wheels/
 COPY --from=numpy-ieee /opt/fuzzy/registry/numpy.env /opt/fuzzy/registry/
 COPY --from=numpy-prism /opt/fuzzy/wheels/ /opt/fuzzy/wheels/
 COPY --from=prism-runtime /opt/fuzzy/wheels/ /opt/fuzzy/wheels/
 ENV FUZZY_ROOT=/opt/fuzzy \
     LD_LIBRARY_PATH=/opt/fuzzy/active/lib:/usr/local/lib \
+    LD_PRELOAD=libfuzzy-libm.so \
     PYTHONPATH= \
     VFC_BACKENDS="libinterflop_prism.so --mode=sr" \
     VFC_BACKENDS_LOGGER=False \
@@ -126,11 +134,13 @@ ENV FUZZY_ROOT=/opt/fuzzy \
     VIRTUAL_ENV=/opt/fuzzy/venv \
     PATH=/opt/fuzzy/venv/bin:${PATH}
 # Verificarlo's driver keeps running on the system Python, not on whichever
-# CPython build is selected.
+# CPython build is selected. libm switches to prism last: until then the
+# preload is the empty ieee library, from /usr/local/lib.
 RUN sed -i '1s|^#!.*python3$|#!/usr/bin/python3|' /usr/local/bin/verificarlo && \
     fuzzy use lapack=prism python=prism && \
     uv venv --seed --no-cache /opt/fuzzy/venv --python /opt/fuzzy/python/3.12/bin/python3 && \
     UV_NO_CACHE=1 fuzzy use numpy=prism && \
+    fuzzy use libm=prism && \
     fuzzy list
 WORKDIR /workdir
 CMD ["/bin/bash"]

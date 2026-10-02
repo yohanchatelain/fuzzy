@@ -8,7 +8,8 @@
 # not break ties like IEEE round-to-nearest, so rn is not expected to be bit
 # for bit identical, but a missing -march, an FMA or an instrumentation
 # mismatch shows up as a much larger difference. Then mixed selections, the
-# ISA of every binary, RUNPATHs, and the fuzzy tool itself.
+# PRISM libraries' dependencies, the ISA of every binary, RUNPATHs, and the
+# fuzzy tool itself.
 set -euo pipefail
 trap 'echo "run.sh:$LINENO: \"$BASH_COMMAND\" failed" >&2' ERR
 level=${1:?usage: run.sh <level>}
@@ -68,6 +69,23 @@ close() {
 }
 
 export VFC_BACKENDS=$SR
+# The other checks select libm themselves. With libm=ieee, the preloaded
+# library is empty: nothing loads PRISM before the package under test does.
+fuzzy use libm=ieee >/dev/null
+
+echo "== PRISM libraries"
+# Each must load on its own, from an uninstrumented program, and share one
+# run-time configuration (verificarlo/prism#23, #24).
+for lib in /usr/local/lib/libprism-static.so /usr/local/lib/libprism-dynamic.so; do
+    needed=$(readelf -d "$(readlink -f "$lib")" | grep NEEDED)
+    for dep in libhwy.so libprism-config.so; do
+        if grep -q "\[$dep\]" <<<"$needed"; then
+            pass "$(basename "$lib") needs $dep"
+        else
+            fail "$(basename "$lib") does not need $dep"
+        fi
+    done
+done
 
 echo "== LAPACK"
 clang -O2 "$here/test_blas.c" -o "$work/test_blas" -L"$FUZZY_ROOT/active/lib" -lblas -llapack
@@ -129,6 +147,22 @@ if (cd "$work" && "$work/numpy-prism/bin/python" -m pytest -q -p no:cacheprovide
 else
     fail "numpy-sanity-check.py (prism)"
 fi
+
+echo "== libm"
+clang -O2 "$here/test_libm.c" -o "$work/test_libm" -lm
+libm() { fuzzy run "libm=$1" -- "$work/test_libm" "$2"; }
+varies libm-prism:binary64 libm prism 64
+varies libm-prism:binary32 libm prism 32
+constant libm-ieee:binary64 libm ieee 64
+constant libm-ieee:binary32 libm ieee 32
+# glibc's double functions are within 1 ULP; prism rn is correctly rounded.
+close libm libm ieee 64 -- libm prism 64
+rn_libm() { VFC_BACKENDS=$RN libm "$@"; }
+constant libm-prism:rn rn_libm prism 64
+# The uninstrumented CPython calls the preloaded functions too.
+py_libm() { fuzzy run python=ieee "libm=$1" -- "$FUZZY_ROOT/python/3.12/bin/python3" -c "import math; print(math.sin(0.5).hex(), math.exp(1.1).hex())"; }
+varies libm-prism:python py_libm prism
+constant libm-ieee:python py_libm ieee
 
 echo "== ISA ($level)"
 if "$here/check-isa.sh" "$level" /usr/local/lib/libprism-static.so "$FUZZY_ROOT" "$work"/numpy-*/lib/python3.12/site-packages/numpy; then

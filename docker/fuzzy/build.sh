@@ -12,15 +12,18 @@
 #
 # The build runs code it has just compiled, so it must run on a CPU that
 # supports the level: an AVX-512 machine for v4. VERIFICARLO_SRC reuses an
-# existing Verificarlo checkout (with submodules) instead of cloning one.
+# existing Verificarlo checkout (with submodules) instead of cloning one;
+# VERIFICARLO_VERSION and PRISM_VERSION must then match it.
 # JOBS sets how many stages podman builds in parallel (default 2).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 n=${1:?usage: build.sh <v1|v2|v3|v4> [podman|docker]}
 engine=${2:-podman}
-verificarlo_version=v2.6.0
-prism_version=0.0.8
+# The first releases with PRISM's libprism-config and libhwy dependency
+# (verificarlo/prism#23, #24) and INTERFLOP_ROUND_DW_ID (libm=prism).
+verificarlo_version=${VERIFICARLO_VERSION:-v2.6.1}
+prism_version=${PRISM_VERSION:-0.0.11}
 case $n in
 v1) march=x86-64 isa=sse2 ;;
 v2) march=x86-64-v2 isa=sse4 ;;
