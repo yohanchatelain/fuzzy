@@ -127,6 +127,7 @@ jobs:
             docker/fuzzy/**
             docker/pytorch/Dockerfile.verificarlo
             docker/resources/**
+            .github/workflows/build-fuzzy.yml
 
       - name: Free disk space
         if: steps.changes.outputs.any_changed == 'true'
