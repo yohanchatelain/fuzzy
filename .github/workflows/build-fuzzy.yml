@@ -134,6 +134,12 @@ jobs:
 
       - name: Build and test
         if: steps.changes.outputs.any_changed == 'true'
+        # Testing only: verificarlo/verificarlo#395 (PRISM a3eb4ec, v0.0.11)
+        # until the Verificarlo release that includes it.
+        env:
+          VERIFICARLO_REF: 6af8047d5db3a6876133a96a4a6276797251c4d2
+          VERIFICARLO_VERSION: dev
+          PRISM_VERSION: 0.0.11
         run: docker/fuzzy/build.sh v3 docker
 
   rename-publish:
