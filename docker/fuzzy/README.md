@@ -133,7 +133,7 @@ To build against an unreleased Verificarlo, pass a checkout (with submodules)
 and the versions it contains:
 
 ```bash
-VERIFICARLO_SRC=~/verificarlo VERIFICARLO_VERSION=dev PRISM_VERSION=0.0.11 docker/fuzzy/build.sh v3
+VERIFICARLO_SRC=~/verificarlo FUZZY_VERIFICARLO_VERSION=dev FUZZY_PRISM_VERSION=0.0.11 docker/fuzzy/build.sh v3
 ```
 
 The script builds the level's Verificarlo image (`docker/pytorch/Dockerfile.verificarlo`) unless it
