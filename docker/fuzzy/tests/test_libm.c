@@ -15,13 +15,15 @@ int main(int argc, char **argv) {
     if (binary32) {
       float f = (float)x, s, c;
       sincosf(f, &s, &c);
-      printf("%a %a %a %a %a %a\n", sinf(f), expf(f), logf(f), powf(f, 1.25f),
-             s, c);
+      printf("%a %a %a %a %a %a %a %a %a %a %a\n", sinf(f), expf(f), logf(f),
+             powf(f, 1.25f), s, c, tanf(f), sinhf(f), coshf(f), tanhf(f),
+             exp2f(f));
     } else {
       double s, c;
       sincos(x, &s, &c);
-      printf("%a %a %a %a %a %a %a\n", sin(x), exp(x), log(x), pow(x, 1.25),
-             atan2(x, 0.75), s, c);
+      printf("%a %a %a %a %a %a %a %a %a %a %a %a\n", sin(x), exp(x), log(x),
+             pow(x, 1.25), atan2(x, 0.75), s, c, tan(x), sinh(x), cosh(x),
+             tanh(x), exp2(x));
     }
   }
   return 0;

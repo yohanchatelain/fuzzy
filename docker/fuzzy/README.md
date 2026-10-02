@@ -22,15 +22,16 @@ library's math functions.
 By default every package uses its `prism` build and
 `VFC_BACKENDS="libinterflop_prism.so --mode=sr"`.
 
-`libm=prism` replaces the C library's `sin`, `exp`, `log`, `pow`, `atan2`,
-`erf`, `lgamma`... (in `float` and `double`; the list is in
+`libm=prism` replaces the C library's `sin`, `tan`, `exp`, `exp2`, `log`,
+`pow`, `atan2`, `tanh`, `erf`, `lgamma`... (in `float` and `double`; the list is in
 `recipes/libm/fuzzy-libm.c`) for every program in the image, instrumented or
 not. Each result is computed in binary128 with libquadmath, then rounded by
 PRISM with its current mode and precision: correctly rounded under
 `--mode=rn`, stochastically rounded under `--mode=sr`. The image preloads
 `libfuzzy-libm.so` (`LD_PRELOAD`), which the loader finds through
 `LD_LIBRARY_PATH`; `libm=ieee` selects an empty one, and the functions come
-from glibc. Other functions (`tan`, `sinh`, `exp2`...) always come from glibc.
+from glibc. Other functions (`exp10`, `fma`, `remainder`...) always come from
+glibc.
 
 ## Choosing builds
 

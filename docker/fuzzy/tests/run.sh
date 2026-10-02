@@ -159,8 +159,10 @@ constant libm-ieee:binary32 libm ieee 32
 close libm libm ieee 64 -- libm prism 64
 rn_libm() { VFC_BACKENDS=$RN libm "$@"; }
 constant libm-prism:rn rn_libm prism 64
-# The uninstrumented CPython calls the preloaded functions too.
-py_libm() { fuzzy run python=ieee "libm=$1" -- "$FUZZY_ROOT/python/3.12/bin/python3" -c "import math; print(math.sin(0.5).hex(), math.exp(1.1).hex())"; }
+# The uninstrumented CPython calls the preloaded functions too. Many values:
+# stochastic rounding moves a correctly rounded result with probability
+# |error| / ulp, which is small for some inputs.
+py_libm() { fuzzy run python=ieee "libm=$1" -- "$FUZZY_ROOT/python/3.12/bin/python3" -c "import math; print(*[f(i / 7).hex() for i in range(1, 50) for f in (math.sin, math.exp, math.tan)])"; }
 varies libm-prism:python py_libm prism
 constant libm-ieee:python py_libm ieee
 
